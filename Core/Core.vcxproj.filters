@@ -1591,6 +1591,9 @@
     <Filter Include="SNES\Debugger\TraceLogger">
       <UniqueIdentifier>ef983cb6-a7e5-4b4b-a6f8-7c3210e9faca</UniqueIdentifier>
     </Filter>
+    <None Include="Debugger\PythonStartup.py">
+      <Filter>Debugger</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Shared\Video\RotateFilter.h">
@@ -2721,6 +2724,12 @@
     <ClInclude Include="PCE\CdRom\PceScsiBus.h">
       <Filter>PCE\CdRom</Filter>
     </ClInclude>
+    <ClInclude Include="Debugger\PythonScriptingContext.h">
+      <Filter>Debugger</Filter>
+    </ClInclude>
+    <ClInclude Include="Debugger\PythonApi.h">
+      <Filter>Debugger</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Shared\Video\RotateFilter.cpp">
@@ -2911,6 +2920,12 @@
     </ClCompile>
     <ClCompile Include="PCE\CdRom\PceScsiBus.cpp">
       <Filter>PCE\CdRom</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\PythonScriptingContext.cpp">
+      <Filter>Debugger</Filter>
+    </ClCompile>
+    <ClCompile Include="Debugger\PythonApi.cpp">
+      <Filter>Debugger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

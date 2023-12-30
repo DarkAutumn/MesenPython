@@ -24,6 +24,8 @@
     <ClInclude Include="Debugger\CdlManager.h" />
     <ClInclude Include="Debugger\DisassemblySearch.h" />
     <ClInclude Include="Debugger\FrozenAddressManager.h" />
+    <ClInclude Include="Debugger\PythonApi.h" />
+    <ClInclude Include="Debugger\PythonScriptingContext.h" />
     <ClInclude Include="Debugger\StepBackManager.h" />
     <ClInclude Include="Gameboy\Carts\GbHuc1.h" />
     <ClInclude Include="Gameboy\Carts\GbMbc3Rtc.h" />
@@ -725,6 +727,7 @@
     <ClCompile Include="Debugger\ExpressionEvaluator.Sms.cpp" />
     <ClCompile Include="Debugger\ExpressionEvaluator.Snes.cpp" />
     <ClCompile Include="Debugger\ExpressionEvaluator.Spc.cpp" />
+    <ClCompile Include="Debugger\PythonApi.cpp" />
     <ClCompile Include="Debugger\StepBackManager.cpp" />
     <ClCompile Include="Gameboy\Debugger\DummyGbCpu.cpp" />
     <ClCompile Include="Gameboy\Debugger\GbTraceLogger.cpp" />
@@ -939,6 +942,7 @@
     <ClCompile Include="Shared\Video\ScaleFilter.cpp" />
     <ClCompile Include="Debugger\ScriptHost.cpp" />
     <ClCompile Include="Debugger\ScriptingContext.cpp" />
+    <ClCompile Include="Debugger\PythonScriptingContext.cpp" />
     <ClCompile Include="Debugger\ScriptManager.cpp" />
     <ClCompile Include="SNES\Coprocessors\SDD1\Sdd1.cpp" />
     <ClCompile Include="SNES\Coprocessors\SDD1\Sdd1Decomp.cpp" />
@@ -967,6 +971,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Core.ruleset" />
+    <None Include="Debugger\PythonStartup.py">
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='PGO Profile|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
+      <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='PGO Optimize|x64'">true</DeploymentContent>
+    </None>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{78FEF1A1-6DF1-4CBB-A373-AE6FA7CE5CE0}</ProjectGuid>
@@ -1064,8 +1074,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <CallingConvention>Cdecl</CallingConvention>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\include</AdditionalIncludeDirectories>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <DisableLanguageExtensions>true</DisableLanguageExtensions>
@@ -1084,6 +1093,12 @@
       <OptimizeReferences>
       </OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>python3.lib</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\libs</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -1097,8 +1112,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\include</AdditionalIncludeDirectories>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DisableLanguageExtensions>true</DisableLanguageExtensions>
@@ -1118,6 +1132,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>python3.lib</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\libs</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PGO Profile|x64'">
     <ClCompile>
@@ -1131,8 +1151,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\include</AdditionalIncludeDirectories>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DisableLanguageExtensions>true</DisableLanguageExtensions>
@@ -1150,6 +1169,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>python3.lib</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\libs</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='PGO Optimize|x64'">
     <ClCompile>
@@ -1163,8 +1188,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <OmitFramePointers>true</OmitFramePointers>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
-      <AdditionalIncludeDirectories>
-      </AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\include</AdditionalIncludeDirectories>
       <StructMemberAlignment>Default</StructMemberAlignment>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <DisableLanguageExtensions>true</DisableLanguageExtensions>
@@ -1182,6 +1206,12 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <AdditionalDependencies>python3.lib</AdditionalDependencies>
+    </Lib>
+    <Lib>
+      <AdditionalLibraryDirectories>C:\Users\leecu\AppData\Local\Programs\Python\Python311\libs</AdditionalLibraryDirectories>
+    </Lib>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
