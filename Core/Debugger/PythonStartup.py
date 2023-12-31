@@ -49,16 +49,15 @@ memoryType = memoryType()
 
 class eventType:
 	def __init__(self):
-		self.reset = 0
-		self.nmi = 1
-		self.irq = 2
-		self.startFrame = 3
-		self.endFrame = 4
-		self.codeBreak = 5
-		self.stateLoaded = 6
-		self.stateSaved = 7
-		self.inputPolled = 8
-		self.spriteZeroHit = 9
-		self.scriptEnded = 10
+		self.nmi = 0
+		self.irq = 1
+		self.startFrame = 2
+		self.endFrame = 3
+		self.reset = 4
+		self.scriptEnded = 5
+		self.inputPolled = 6
+		self.stateLoaded = 7
+		self.stateSaved = 8
+		self.codeBreak = 9
 		
 eventType = eventType()
