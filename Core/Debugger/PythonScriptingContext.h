@@ -33,7 +33,8 @@ public:
 		{
 			_count = count;
 			InterlockedIncrement(_count);
-			_old = PyThreadState_Swap(state);
+			if (state)
+				_old = PyThreadState_Swap(state);
 		}
 	}
 

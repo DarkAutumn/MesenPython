@@ -261,9 +261,14 @@ PyThreadState *InitializePython(PythonScriptingContext *context, const string & 
 		Py_Initialize();
 	}
 
+#ifdef USE_SUBINTERPRETERS
 	PyThreadState* curr = Py_NewInterpreter();
+#else
+	PyThreadState* curr = nullptr;
+#endif
 	s_pythonContexts[curr] = context;
 
+	PyThreadState* old = curr ? PyThreadState_Swap(curr) : nullptr;
 
 	string startupPath = FolderUtilities::GetHomeFolder();
 	startupPath += "\\";
@@ -289,6 +294,9 @@ PyThreadState *InitializePython(PythonScriptingContext *context, const string & 
 			}
 		}
 	}
+
+	if (old)
+		PyThreadState_Swap(old);
 
 	return curr;
 }
