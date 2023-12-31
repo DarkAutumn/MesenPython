@@ -5,6 +5,8 @@
 #include "Debugger/Debugger.h"
 #include "Shared/Emulator.h"
 #include "Shared/SaveStateManager.h"
+#include "Shared/BaseControlManager.h"
+#include "Shared/BaseControlDevice.h"
 
 static PyObject* PythonEmuLog(PyObject* self, PyObject* args);
 static PyObject* PythonRead8(PyObject* self, PyObject* args);
@@ -13,6 +15,7 @@ static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args);
 static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonLoadSaveState(PyObject* self, PyObject* args);
+static PyObject* PythonSetInput(PyObject* self, PyObject* args);
 
 static PyMethodDef MyMethods[] = {
 	{"log", PythonEmuLog, METH_VARARGS, "Logging function"},
@@ -22,6 +25,7 @@ static PyMethodDef MyMethods[] = {
 	{"addEventCallback", PythonAddEventCallback, METH_VARARGS, "Adds an event callback.  e.g. emu.addEventCallback(function, eventType.startFrame)"},
 	{"removeEventCallback", PythonRemoveEventCallback, METH_VARARGS, "Removes an event callback."},
 	{"loadSaveState", PythonLoadSaveState, METH_VARARGS, "Loads a save state."},
+	{"setInput", PythonSetInput, METH_VARARGS, "Sets input for a controller."},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -168,7 +172,7 @@ static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args)
 	return PyLong_FromVoidPtr(ptr);
 }
 
-static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args)
+static PyObject* PythonSetInput(PyObject* helf, PyObject* args)
 {
 	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
@@ -176,6 +180,63 @@ static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args)
 		return nullptr;
 	}
 
+	// extract args as (port, list_of_buttons)
+	PyObject* pySequence = nullptr;
+	int port = 0, subport = 0;
+	if(!PyArg_ParseTuple(args, "iiO", &port, &subport, &pySequence))
+		return nullptr;
+
+	// extract the list of buttons
+	PyObject* pyIter = PyObject_GetIter(pySequence);
+	if(!pyIter) {
+		PyErr_SetString(PyExc_TypeError, "Second argument must be iterable");
+		return nullptr;
+	}
+
+	// get the controller
+	shared_ptr<BaseControlDevice> controller = context->GetDebugger()->GetEmulator()->GetConsoleUnsafe()->GetControlManager()->GetControlDevice(port, subport);
+	if(!controller) {
+		PyErr_SetString(PyExc_TypeError, "Invalid port");
+		return nullptr;
+	}
+
+
+	// get the list of buttons
+	vector<DeviceButtonName> buttons = controller->GetKeyNameAssociations();
+	for(DeviceButtonName& btn : buttons) {
+		if(!btn.IsNumeric) {
+			// get the button state
+			PyObject* pyItem = PyIter_Next(pyIter);
+			if(!pyItem) {
+				PyErr_SetString(PyExc_TypeError, "Second argument must be a list of booleans");
+				return nullptr;
+			}
+
+			// check if is none
+			if(pyItem == Py_None) {
+				continue;
+			}
+
+			if(!PyBool_Check(pyItem)) {
+				PyErr_SetString(PyExc_TypeError, "Second argument must be a list of booleans");
+				return nullptr;
+			}
+
+			bool btnState = PyObject_IsTrue(pyItem);
+			controller->SetBitValue(btn.ButtonId, btnState);
+		}
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args)
+{
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
+	if(!context) {
+		PyErr_SetString(PyExc_TypeError, "No registered python context.");
+		return nullptr;
+	}
 
 	void* ptr;
 	if(!PyArg_ParseTuple(args, "p", &ptr))
