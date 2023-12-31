@@ -20,6 +20,6 @@
 
 class PythonScriptingContext;
 
-PythonScriptingContext* GetScriptingContextFromThreadState(PyThreadState *state);
+PythonScriptingContext* GetScriptingContextFromThreadState();
 PyThreadState *InitializePython(PythonScriptingContext *ctx, const string &directory);
 void ReportEndScriptingContext(PythonScriptingContext *ctx);

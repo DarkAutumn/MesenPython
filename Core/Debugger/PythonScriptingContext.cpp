@@ -116,11 +116,6 @@ static std::string GetDirectoryFromPath(const std::string& filepath)
 bool PythonScriptingContext::LoadScript(string scriptName, string path, string scriptContent, Debugger*)
 {
 	PyThreadState* state = InitializePython(this, GetDirectoryFromPath(path));
-	if(!state) {
-		LogError();
-		return false;
-	}
-
 	_python = PythonInterpreterHandler(state);
 	_scriptName = scriptName;
 
@@ -187,21 +182,26 @@ int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 
 	int count = 0;
 	for(PyObject* callback : _eventCallbacks[(int)type]) {
-		PyObject* pFunc = callback;
+		Py_INCREF(callback);
 		PyObject* pArgs = PyTuple_New(1);
 		PyObject* pValue = PyLong_FromLong((int)cpuType);
 		if(!pValue) {
 			LogError();
+			Py_DECREF(callback);
 			continue;
 		}
 
-		PyObject* pResult = PyObject_CallFunctionObjArgs(pFunc, pValue, NULL);
-		if(pResult != NULL)
-			Py_DECREF(pResult);
-		else
-			LogError();
+		PyTuple_SET_ITEM(pArgs, 0, pValue);  // pValue reference is stolen here.
 
-		Py_DECREF(pValue);
+		PyObject* pResult = PyObject_CallObject(callback, pArgs);
+		if(pResult != NULL) {
+			Py_DECREF(pResult);
+		} else {
+			LogError();
+			PyErr_Print();  // Optional: print Python error to stderr.
+		}
+
+		Py_DECREF(pArgs);
 		count++;
 	}
 

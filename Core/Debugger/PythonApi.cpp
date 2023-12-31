@@ -36,7 +36,7 @@ PyMODINIT_FUNC PyInit_mesen(void)
 
 static PyObject* PythonEmuLog(PyObject* self, PyObject* args)
 {
-	PythonScriptingContext *context = GetScriptingContextFromThreadState(PyThreadState_Get());
+	PythonScriptingContext *context = GetScriptingContextFromThreadState();
 	if(!context)
 	{
 		PyErr_SetString(PyExc_TypeError, "No registered python context.");
@@ -66,7 +66,7 @@ static PyObject* PythonEmuLog(PyObject* self, PyObject* args)
 
 static PyObject* PythonRead8(PyObject* self, PyObject* args)
 {
-	PythonScriptingContext* context = GetScriptingContextFromThreadState(PyThreadState_Get());
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
 		PyErr_SetString(PyExc_TypeError, "No registered python context.");
 		return nullptr;
@@ -103,7 +103,7 @@ static PyObject* PythonRead8(PyObject* self, PyObject* args)
 
 static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args)
 {
-	PythonScriptingContext* context = GetScriptingContextFromThreadState(PyThreadState_Get());
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
 		PyErr_SetString(PyExc_TypeError, "No registered python context.");
 		return nullptr;
@@ -144,7 +144,7 @@ static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args)
 
 static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args)
 {
-	PythonScriptingContext* context = GetScriptingContextFromThreadState(PyThreadState_Get());
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
 		PyErr_SetString(PyExc_TypeError, "No registered python context.");
 		return nullptr;
@@ -164,7 +164,7 @@ static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args)
 
 static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args)
 {
-	PythonScriptingContext* context = GetScriptingContextFromThreadState(PyThreadState_Get());
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
 		PyErr_SetString(PyExc_TypeError, "No registered python context.");
 		return nullptr;
@@ -188,6 +188,8 @@ static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args)
 		return nullptr;
 	}
 
+	Py_INCREF(pyFunc);
+
 	// Add the callback to the list of callbacks
 	context->RegisterEventCallback(static_cast<EventType>(eventType), pyFunc);
 
@@ -196,7 +198,7 @@ static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args)
 
 static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args)
 {
-	PythonScriptingContext* context = GetScriptingContextFromThreadState(PyThreadState_Get());
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
 		PyErr_SetString(PyExc_TypeError, "No registered python context.");
 		return nullptr;
@@ -214,6 +216,8 @@ static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args)
 		PyErr_SetString(PyExc_TypeError, "First argument must be callable");
 		return nullptr;
 	}
+
+	Py_DECREF(pyFunc);
 
 	// Check if eventType is a valid EventType
 	if(eventType < 0 || eventType >(int)EventType::LastValue) {
@@ -263,12 +267,12 @@ PyThreadState *InitializePython(PythonScriptingContext *context, const string & 
 
 #ifdef USE_SUBINTERPRETERS
 	PyThreadState* curr = Py_NewInterpreter();
+	PyThreadState* old = PyThreadState_Swap(curr);
 #else
 	PyThreadState* curr = nullptr;
 #endif
 	s_pythonContexts[curr] = context;
 
-	PyThreadState* old = curr ? PyThreadState_Swap(curr) : nullptr;
 
 	string startupPath = FolderUtilities::GetHomeFolder();
 	startupPath += "\\";
@@ -295,8 +299,9 @@ PyThreadState *InitializePython(PythonScriptingContext *context, const string & 
 		}
 	}
 
-	if (old)
-		PyThreadState_Swap(old);
+#ifdef USE_SUBINTERPRETERS
+	PyThreadState_Swap(old);
+#endif
 
 	return curr;
 }
@@ -313,8 +318,14 @@ void ReportEndScriptingContext(PythonScriptingContext* ctx)
 	}
 }
 
-PythonScriptingContext* GetScriptingContextFromThreadState(PyThreadState* state)
+PythonScriptingContext* GetScriptingContextFromThreadState()
 {
+#if USE_SUBINTERPRETERS
+	PyThreadState* state = PyThreadState_Get();
+#else
+	PyThreadState* state = nullptr;
+#endif
+
 	auto it = s_pythonContexts.find(state);
 	if(it != s_pythonContexts.end())
 		return it->second;
