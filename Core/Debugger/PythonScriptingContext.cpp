@@ -168,8 +168,11 @@ void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint16_t& v
 void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint32_t& value, CallbackType type, CpuType cpuType)
 {}
 
+static PyObject *s_args = nullptr;
+
 int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 {
+
 	if(type == EventType::ScriptEnded) {
 		_python.Detach();
 		return 0;
@@ -182,17 +185,19 @@ int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 
 	int count = 0;
 	for(PyObject* callback : _eventCallbacks[(int)type]) {
-		PyObject* pArgs = PyTuple_New(1);
-		PyObject* pValue = PyLong_FromLong((int)cpuType);
-		if(!pValue) {
-			LogError();
-			Py_DECREF(callback);
-			continue;
+		Py_ssize_t count = Py_REFCNT(callback);
+
+		if(s_args == nullptr) {
+			s_args = PyTuple_New(1);
+			PyObject* pValue = PyLong_FromLong((int)cpuType);
+			if(!pValue) {
+				LogError();
+				continue;
+			}
+			PyTuple_SET_ITEM(s_args, 0, pValue);  // pValue reference is stolen here.
 		}
 
-		PyTuple_SET_ITEM(pArgs, 0, pValue);  // pValue reference is stolen here.
-
-		PyObject* pResult = PyObject_CallObject(callback, pArgs);
+		PyObject* pResult = PyObject_CallObject(callback, s_args);
 		if(pResult != NULL) {
 			Py_DECREF(pResult);
 		} else {
@@ -200,7 +205,6 @@ int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 			PyErr_Print();  // Optional: print Python error to stderr.
 		}
 
-		Py_DECREF(pArgs);
 		count++;
 	}
 
