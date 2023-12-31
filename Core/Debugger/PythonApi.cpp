@@ -2,6 +2,9 @@
 #include "PythonScriptingContext.h"
 #include "PythonApi.h"
 #include "Utilities/FolderUtilities.h"
+#include "Debugger/Debugger.h"
+#include "Shared/Emulator.h"
+#include "Shared/SaveStateManager.h"
 
 static PyObject* PythonEmuLog(PyObject* self, PyObject* args);
 static PyObject* PythonRead8(PyObject* self, PyObject* args);
@@ -9,6 +12,7 @@ static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args);
 static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args);
 static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args);
+static PyObject* PythonLoadSaveState(PyObject* self, PyObject* args);
 
 static PyMethodDef MyMethods[] = {
 	{"log", PythonEmuLog, METH_VARARGS, "Logging function"},
@@ -17,6 +21,7 @@ static PyMethodDef MyMethods[] = {
 	{"unregisterFrameMemory", PythonUnregisterFrameMemory, METH_VARARGS, "Unregister frame memory updates."},
 	{"addEventCallback", PythonAddEventCallback, METH_VARARGS, "Adds an event callback.  e.g. emu.addEventCallback(function, eventType.startFrame)"},
 	{"removeEventCallback", PythonRemoveEventCallback, METH_VARARGS, "Removes an event callback."},
+	{"loadSaveState", PythonLoadSaveState, METH_VARARGS, "Loads a save state."},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -60,6 +65,27 @@ static PyObject* PythonEmuLog(PyObject* self, PyObject* args)
 
 	string message = PyUnicode_AsUTF8(pyStr);
 	context->Log(message);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject* PythonLoadSaveState(PyObject* self, PyObject* args)
+{
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
+	if(!context)
+	{
+		PyErr_SetString(PyExc_TypeError, "No registered python context.");
+		return nullptr;
+	}
+
+	PyObject* pyStr;
+	if(!PyArg_ParseTuple(args, "O", &pyStr)) {
+		PyErr_SetString(PyExc_TypeError, "Failed to parse arguments");
+		return nullptr;
+	}
+
+	string path = PyUnicode_AsUTF8(pyStr);
+	context->GetDebugger()->GetEmulator()->GetSaveStateManager()->LoadState(path);
 
 	Py_RETURN_NONE;
 }
