@@ -1,5 +1,6 @@
 #include "pch.h"
 #include <algorithm>
+#include <filesystem>
 #include "Debugger/PythonScriptingContext.h"
 #include "Debugger/DebugTypes.h"
 #include "Debugger/Debugger.h"
@@ -106,10 +107,15 @@ void PythonScriptingContext::LogError()
 	}
 }
 
+static std::string GetDirectoryFromPath(const std::string& filepath)
+{
+	std::filesystem::path pathObj(filepath);
+	return pathObj.parent_path().string();
+}
 
 bool PythonScriptingContext::LoadScript(string scriptName, string path, string scriptContent, Debugger*)
 {
-	PyThreadState* state = InitializePython(this);
+	PyThreadState* state = InitializePython(this, GetDirectoryFromPath(path));
 	if(!state) {
 		LogError();
 		return false;

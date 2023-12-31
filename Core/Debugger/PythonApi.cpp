@@ -251,7 +251,9 @@ static string ReadFileContents(const string& path)
 
 std::unordered_map<PyThreadState*, PythonScriptingContext*> s_pythonContexts;
 
-PyThreadState *InitializePython(PythonScriptingContext *context)
+
+
+PyThreadState *InitializePython(PythonScriptingContext *context, const string & path)
 {
 	if(!Py_IsInitialized())
 	{
@@ -262,7 +264,6 @@ PyThreadState *InitializePython(PythonScriptingContext *context)
 	PyThreadState* curr = Py_NewInterpreter();
 	s_pythonContexts[curr] = context;
 
-	PyThreadState* old = PyThreadState_Swap(curr);
 
 	string startupPath = FolderUtilities::GetHomeFolder();
 	startupPath += "\\";
@@ -275,6 +276,18 @@ PyThreadState *InitializePython(PythonScriptingContext *context)
 		PyErr_Print();
 		Py_EndInterpreter(curr);
 		curr = nullptr;
+	}
+	else
+	{
+		// add script directory to sys.path
+		PyObject* sysPath = PySys_GetObject("path"); // Borrowed reference
+		if(sysPath) {
+			PyObject* pPath = PyUnicode_FromString(path.c_str());
+			if(pPath) {
+				PyList_Insert(sysPath, 0, pPath);
+				Py_DECREF(pPath);
+			}
+		}
 	}
 
 	return curr;
