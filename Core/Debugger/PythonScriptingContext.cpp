@@ -182,7 +182,6 @@ int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 
 	int count = 0;
 	for(PyObject* callback : _eventCallbacks[(int)type]) {
-		Py_INCREF(callback);
 		PyObject* pArgs = PyTuple_New(1);
 		PyObject* pValue = PyLong_FromLong((int)cpuType);
 		if(!pValue) {
