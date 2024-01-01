@@ -12,6 +12,24 @@
 #include "Shared/EventType.h"
 #include "Debugger/MemoryDumper.h"
 #include "PythonApi.h"
+#include "Shared/Video/BaseVideoFilter.h"
+
+void *PythonScriptingContext::RegisterScreenMemory()
+{
+	_frameBufferRegisterCount++;
+	return _frameBuffer;
+}
+
+
+bool PythonScriptingContext::UnregisterScreenMemory(void* ptr)
+{
+	if(ptr == _frameBuffer && _frameBufferRegisterCount > 0) {
+		_frameBufferRegisterCount--;
+		return true;
+	}
+
+	return false;
+}
 
 void* PythonScriptingContext::RegisterFrameMemory(MemoryType type, const std::vector<int>& addresses)
 {
@@ -58,6 +76,23 @@ void PythonScriptingContext::UpdateFrameMemory()
 {
 	for(auto& reg : _frameMemory)
 		FillOneFrameMemory(reg);
+}
+
+void PythonScriptingContext::UpdateScreenMemory()
+{
+	if(_frameBufferRegisterCount > 0) {
+		Emulator* _emu = _debugger->GetEmulator();
+		PpuFrameInfo frame = _emu->GetPpuFrame();
+		FrameInfo frameSize = { 0 };
+		frameSize.Height = frame.Height;
+		frameSize.Width = frame.Width;
+
+		unique_ptr<BaseVideoFilter> filter(_emu->GetVideoFilter());
+		filter->SetBaseFrameInfo(frameSize);
+		frameSize = filter->SendFrame((uint16_t*)frame.FrameBuffer, _emu->GetFrameCount(), _emu->GetFrameCount() & 0x01, nullptr, false);
+		uint32_t* rgbBuffer = filter->GetOutputBuffer();
+		memcpy_s(_frameBuffer, sizeof(_frameBuffer), rgbBuffer, frameSize.Height * frameSize.Width * sizeof(uint32_t));
+	}
 }
 
 bool PythonScriptingContext::ReadMemory(uint32_t addr, MemoryType memType, bool sgned, uint8_t& result)
@@ -180,8 +215,10 @@ int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 
 	auto lock = _python.AcquireSafe();
 
-	if(type == EventType::StartFrame)
+	if(type == EventType::StartFrame) {
 		UpdateFrameMemory();
+		UpdateScreenMemory();
+	}
 
 	int count = 0;
 	for(PyObject* callback : _eventCallbacks[(int)type]) {

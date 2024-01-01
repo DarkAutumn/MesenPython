@@ -137,15 +137,20 @@ protected:
 	void LogError();
 
 	std::vector<MemoryRegistry> _frameMemory;
+	uint32_t _frameBuffer[256 * 240];
+	int _frameBufferRegisterCount = 0;
 
 	void FillOneFrameMemory(const MemoryRegistry& reg);
 	void UpdateFrameMemory();
+	void UpdateScreenMemory();
 
 public:
 	// Python apis
 	bool ReadMemory(uint32_t addr, MemoryType mem, bool sgned, uint8_t& result);
 	void* RegisterFrameMemory(MemoryType type, const std::vector<int>& addresses);
 	bool UnregisterFrameMemory(void* ptr);
+	void *RegisterScreenMemory();
+	bool UnregisterScreenMemory(void *ptr);
 
 public:
 	PythonScriptingContext(Debugger* debugger);

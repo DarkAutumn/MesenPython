@@ -12,6 +12,8 @@ static PyObject* PythonEmuLog(PyObject* self, PyObject* args);
 static PyObject* PythonRead8(PyObject* self, PyObject* args);
 static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args);
 static PyObject* PythonUnregisterFrameMemory(PyObject* self, PyObject* args);
+static PyObject* PythonRegisterScreenMemory(PyObject* self, PyObject* args);
+static PyObject* PythonUnregisterScreenMemory(PyObject* self, PyObject* args);
 static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonLoadSaveState(PyObject* self, PyObject* args);
@@ -23,6 +25,8 @@ static PyMethodDef MyMethods[] = {
 	{"read8", PythonRead8, METH_VARARGS, "Read 8-bit value from memory"},
 	{"registerFrameMemory", PythonRegisterFrameMemory, METH_VARARGS, "Register memory addresses (and sizes) to be tracked and updated every frame."},
 	{"unregisterFrameMemory", PythonUnregisterFrameMemory, METH_VARARGS, "Unregister frame memory updates."},
+	{"registerScreenMemory", PythonRegisterScreenMemory, METH_VARARGS, "Register screen memory addresses (and sizes) to be tracked and updated every frame."},
+	{"unregisterScreenMemory", PythonUnregisterScreenMemory, METH_VARARGS, "Unregister screen memory updates."},
 	{"addEventCallback", PythonAddEventCallback, METH_VARARGS, "Adds an event callback.  e.g. emu.addEventCallback(function, eventType.startFrame)"},
 	{"removeEventCallback", PythonRemoveEventCallback, METH_VARARGS, "Removes an event callback."},
 	{"loadSaveState", PythonLoadSaveState, METH_VARARGS, "Loads a save state."},
@@ -131,6 +135,42 @@ static PyObject* PythonRead8(PyObject* self, PyObject* args)
 		pyResult = PyLong_FromUnsignedLong(result);
 
 	return pyResult;
+}
+
+
+
+static PyObject* PythonUnregisterScreenMemory(PyObject* self, PyObject* args)
+{
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
+	if(!context) {
+		PyErr_SetString(PyExc_TypeError, "No registered python context.");
+		return nullptr;
+	}
+
+	void* ptr;
+	if(!PyArg_ParseTuple(args, "p", &ptr))
+		return nullptr;
+
+	bool result = context->UnregisterScreenMemory(ptr);
+	if(result)
+		Py_RETURN_TRUE;
+
+	Py_RETURN_FALSE;
+}
+
+static PyObject* PythonRegisterScreenMemory(PyObject* self, PyObject* args)
+{
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
+	if(!context) {
+		PyErr_SetString(PyExc_TypeError, "No registered python context.");
+		return nullptr;
+	}
+
+	void* ptr = context->RegisterScreenMemory();
+	if(ptr == nullptr)
+		Py_RETURN_NONE;
+
+	return PyLong_FromVoidPtr(ptr);
 }
 
 static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args)
