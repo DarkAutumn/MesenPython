@@ -422,7 +422,7 @@ PyThreadState *InitializePython(PythonScriptingContext *context, const string & 
 {
 	if(!Py_IsInitialized())
 	{
-		PyImport_AppendInittab("emu", PyInit_mesen);
+		PyImport_AppendInittab("mesen_", PyInit_mesen);
 		Py_Initialize();
 	}
 
@@ -434,29 +434,13 @@ PyThreadState *InitializePython(PythonScriptingContext *context, const string & 
 #endif
 	s_pythonContexts[curr] = context;
 
-
-	string startupPath = FolderUtilities::GetHomeFolder();
-	startupPath += "\\";
-	startupPath += "PythonStartup.py";
-	string startupScript = ReadFileContents(startupPath);
-
-	bool result = !PyRun_SimpleString(startupScript.c_str());
-	if(!result)
-	{
-		PyErr_Print();
-		Py_EndInterpreter(curr);
-		curr = nullptr;
-	}
-	else
-	{
-		// add script directory to sys.path
-		PyObject* sysPath = PySys_GetObject("path"); // Borrowed reference
-		if(sysPath) {
-			PyObject* pPath = PyUnicode_FromString(path.c_str());
-			if(pPath) {
-				PyList_Insert(sysPath, 0, pPath);
-				Py_DECREF(pPath);
-			}
+	// add script directory to sys.path
+	PyObject* sysPath = PySys_GetObject("path"); // Borrowed reference
+	if(sysPath) {
+		PyObject* pPath = PyUnicode_FromString(path.c_str());
+		if(pPath) {
+			PyList_Insert(sysPath, 0, pPath);
+			Py_DECREF(pPath);
 		}
 	}
 
