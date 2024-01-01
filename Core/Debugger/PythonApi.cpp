@@ -291,11 +291,6 @@ static PyObject* PythonSetInput(PyObject* self, PyObject* args)
 				continue;
 			}
 
-			if(!PyBool_Check(pyItem)) {
-				PyErr_SetString(PyExc_TypeError, "Second argument must be a list of booleans");
-				return nullptr;
-			}
-
 			bool btnState = PyObject_IsTrue(pyItem);
 			controller->SetBitValue(btn.ButtonId, btnState);
 		}
