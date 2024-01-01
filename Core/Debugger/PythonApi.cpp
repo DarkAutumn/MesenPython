@@ -16,6 +16,7 @@ static PyObject* PythonAddEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args);
 static PyObject* PythonLoadSaveState(PyObject* self, PyObject* args);
 static PyObject* PythonSetInput(PyObject* self, PyObject* args);
+static PyObject* PythonGetInput(PyObject* self, PyObject* args);
 
 static PyMethodDef MyMethods[] = {
 	{"log", PythonEmuLog, METH_VARARGS, "Logging function"},
@@ -26,6 +27,7 @@ static PyMethodDef MyMethods[] = {
 	{"removeEventCallback", PythonRemoveEventCallback, METH_VARARGS, "Removes an event callback."},
 	{"loadSaveState", PythonLoadSaveState, METH_VARARGS, "Loads a save state."},
 	{"setInput", PythonSetInput, METH_VARARGS, "Sets input for a controller."},
+	{"getInput", PythonGetInput, METH_VARARGS, "Gets input for a controller."},
 	{NULL, NULL, 0, NULL}
 };
 
@@ -172,7 +174,40 @@ static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args)
 	return PyLong_FromVoidPtr(ptr);
 }
 
-static PyObject* PythonSetInput(PyObject* helf, PyObject* args)
+static PyObject* PythonGetInput(PyObject* self, PyObject* args)
+{
+	PythonScriptingContext* context = GetScriptingContextFromThreadState();
+	if(!context) {
+		PyErr_SetString(PyExc_TypeError, "No registered python context.");
+		return nullptr;
+	}
+
+	// extract args as (port, list_of_buttons)
+	int port = 0, subport = 0;
+	if(!PyArg_ParseTuple(args, "ii", &port, &subport))
+		return nullptr;
+
+	PyObject *result = PyList_New(8);
+
+	// get the controller
+	shared_ptr<BaseControlDevice> controller = context->GetDebugger()->GetEmulator()->GetConsoleUnsafe()->GetControlManager()->GetControlDevice(port, subport);
+	if(!controller) {
+		PyErr_SetString(PyExc_TypeError, "Invalid port");
+		return nullptr;
+	}
+	vector<DeviceButtonName> buttons = controller->GetKeyNameAssociations();
+	for(DeviceButtonName& btn : buttons) {
+		if(!btn.IsNumeric) {
+			bool btnState = controller->IsPressed(btn.ButtonId);
+			PyObject* pyItem = PyBool_FromLong(btnState);
+			PyList_SetItem(result, btn.ButtonId, pyItem);
+		}
+	}
+
+	return result;
+}
+
+static PyObject* PythonSetInput(PyObject* self, PyObject* args)
 {
 	PythonScriptingContext* context = GetScriptingContextFromThreadState();
 	if(!context) {
@@ -199,7 +234,6 @@ static PyObject* PythonSetInput(PyObject* helf, PyObject* args)
 		PyErr_SetString(PyExc_TypeError, "Invalid port");
 		return nullptr;
 	}
-
 
 	// get the list of buttons
 	vector<DeviceButtonName> buttons = controller->GetKeyNameAssociations();
