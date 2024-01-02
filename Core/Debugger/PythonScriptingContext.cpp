@@ -150,17 +150,10 @@ static std::string GetDirectoryFromPath(const std::string& filepath)
 
 bool PythonScriptingContext::LoadScript(string scriptName, string path, string scriptContent, Debugger*)
 {
-	PyThreadState* state = InitializePython(this, GetDirectoryFromPath(path));
-	_python = PythonInterpreterHandler(state);
 	_scriptName = scriptName;
-
-	auto lock = _python.AcquireSafe();
-
-	int error = PyRun_SimpleString(scriptContent.c_str());
-	if(error) {
-		LogError();
-		return false;
-	}
+	_scriptPath = path;
+	_scriptContent = scriptContent;
+	_needsInit = true;
 
 	return true;
 }
@@ -203,10 +196,20 @@ void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint16_t& v
 void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint32_t& value, CallbackType type, CpuType cpuType)
 {}
 
-static PyObject *s_args = nullptr;
-
 int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 {
+	if(type == EventType::StartFrame && _needsInit) {
+		_needsInit = false;
+		PyThreadState* state = InitializePython(this, GetDirectoryFromPath(_scriptPath));
+		_python = PythonInterpreterHandler(state);
+
+		auto lock = _python.AcquireSafe();
+
+		int error = PyRun_SimpleString(_scriptContent.c_str());
+		if(error) {
+			LogError();
+		}
+	}
 
 	if(type == EventType::ScriptEnded) {
 		_python.Detach();
@@ -221,26 +224,17 @@ int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 	}
 
 	int count = 0;
+	if (_eventCallbacks[(int)type].empty())
+		return count;
+
 	for(PyObject* callback : _eventCallbacks[(int)type]) {
-		Py_ssize_t count = Py_REFCNT(callback);
-
-		if(s_args == nullptr) {
-			s_args = PyTuple_New(1);
-			PyObject* pValue = PyLong_FromLong((int)cpuType);
-			if(!pValue) {
-				LogError();
-				continue;
-			}
-			PyTuple_SET_ITEM(s_args, 0, pValue);  // pValue reference is stolen here.
-		}
-
-		PyObject* pResult = PyObject_CallObject(callback, s_args);
-		if(pResult != NULL) {
-			Py_DECREF(pResult);
-		} else {
+		PyObject* args = Py_BuildValue("(i)", cpuType);
+		PyObject* result = PyObject_CallObject(callback, args);
+		Py_DECREF(args);
+		if(result != nullptr)
+			Py_DECREF(result);
+		else
 			LogError();
-			PyErr_Print();  // Optional: print Python error to stderr.
-		}
 
 		count++;
 	}

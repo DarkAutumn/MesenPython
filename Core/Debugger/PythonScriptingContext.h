@@ -120,6 +120,10 @@ protected:
 	PythonInterpreterHandler _python;
 
 	string _scriptName;
+	string _scriptPath;
+	string _scriptContent;
+	bool _needsInit = false;
+
 	deque<string> _logRows;
 	SimpleLock _logLock;
 
