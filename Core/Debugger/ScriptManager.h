@@ -32,6 +32,7 @@ public:
 	void ProcessEvent(EventType type, CpuType cpuType);
 
 	void EnableCpuMemoryCallbacks() { _isCpuMemoryCallbackEnabled = true; }
+	void DisableCpuMemoryCallbacks() { _isCpuMemoryCallbackEnabled = false; }
 	bool HasCpuMemoryCallbacks() { return _scripts.size() && _isCpuMemoryCallbackEnabled; }
 
 	void EnablePpuMemoryCallbacks() { _isPpuMemoryCallbackEnabled = true; }

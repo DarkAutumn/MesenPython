@@ -76,6 +76,8 @@ static PyObject* PythonEmuLog(PyObject* self, PyObject* args)
 	string message = PyUnicode_AsUTF8(pyStr);
 	context->Log(message);
 
+	Py_DECREF(pyStr);
+
 	Py_RETURN_NONE;
 }
 
@@ -95,7 +97,7 @@ static PyObject* PythonLoadSaveState(PyObject* self, PyObject* args)
 	}
 
 	string path = PyUnicode_AsUTF8(pyStr);
-	context->GetDebugger()->GetEmulator()->GetSaveStateManager()->LoadState(path);
+	context->LoadSaveState(path);	
 
 	Py_RETURN_NONE;
 }
@@ -205,7 +207,11 @@ static PyObject* PythonRegisterFrameMemory(PyObject* self, PyObject* args)
 
 		int addr = PyLong_AsLong(pyItem);
 		result.push_back(addr);
+
+		Py_DECREF(pyItem);
 	}
+
+	Py_DECREF(pyIter);
 
 	void* ptr = context->RegisterFrameMemory(static_cast<MemoryType>(memType), result);
 	if(ptr == nullptr)
@@ -286,6 +292,7 @@ static PyObject* PythonSetInput(PyObject* self, PyObject* args)
 				return nullptr;
 			}
 
+			Py_DECREF(pyItem);
 			// check if is none
 			if(pyItem == Py_None) {
 				continue;
@@ -295,6 +302,8 @@ static PyObject* PythonSetInput(PyObject* self, PyObject* args)
 			controller->SetBitValue(btn.ButtonId, btnState);
 		}
 	}
+
+	Py_DECREF(pyIter);
 
 	Py_RETURN_NONE;
 }
@@ -373,8 +382,6 @@ static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args)
 		return nullptr;
 	}
 
-	Py_DECREF(pyFunc);
-
 	// Check if eventType is a valid EventType
 	if(eventType < 0 || eventType >(int)EventType::LastValue) {
 		PyErr_SetString(PyExc_TypeError, "Second argument must be a valid EventType");
@@ -383,6 +390,8 @@ static PyObject* PythonRemoveEventCallback(PyObject* self, PyObject* args)
 
 	// Remove the callback from the list of callbacks
 	context->UnregisterEventCallback(static_cast<EventType>(eventType), pyFunc);
+
+	Py_DECREF(pyFunc);
 
 	Py_RETURN_NONE;
 }

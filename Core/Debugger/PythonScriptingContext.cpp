@@ -188,13 +188,37 @@ string PythonScriptingContext::GetScriptName()
 }
 
 void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint8_t& value, CallbackType type, CpuType cpuType)
-{}
+{
+	if(!_loadSaveState.empty()) {
+		_debugger->GetScriptManager()->DisableCpuMemoryCallbacks();
+		_debugger->GetEmulator()->GetSaveStateManager()->LoadState(_loadSaveState);
+		_loadSaveState.clear();
+	}
+}
 
 void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint16_t& value, CallbackType type, CpuType cpuType)
-{}
+{
+	if(!_loadSaveState.empty()) {
+		_debugger->GetScriptManager()->DisableCpuMemoryCallbacks();
+		_debugger->GetEmulator()->GetSaveStateManager()->LoadState(_loadSaveState);
+		_loadSaveState.clear();
+	}
+}
 
 void PythonScriptingContext::CallMemoryCallback(AddressInfo relAddr, uint32_t& value, CallbackType type, CpuType cpuType)
-{}
+{
+	if(!_loadSaveState.empty()) {
+		_debugger->GetScriptManager()->DisableCpuMemoryCallbacks();
+		_debugger->GetEmulator()->GetSaveStateManager()->LoadState(_loadSaveState);
+		_loadSaveState.clear();
+	}
+}
+
+void PythonScriptingContext::LoadSaveState(const string& path)
+{
+	_loadSaveState = path;
+	_debugger->GetScriptManager()->EnableCpuMemoryCallbacks();
+}
 
 int PythonScriptingContext::CallEventCallback(EventType type, CpuType cpuType)
 {
